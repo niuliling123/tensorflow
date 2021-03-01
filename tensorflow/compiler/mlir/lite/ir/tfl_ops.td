@@ -478,13 +478,9 @@ class TFL_Op<string mnemonic, list<OpTrait> traits = []> :
   string customOption = ?;
 }
 
-class TFL_ConvOp<string mnemonic, string opSummary, int index,
-                 list<OpTrait> additional_traits = []> :
-    TFL_Op<mnemonic,[NoSideEffect,
-                     AccumulatorUniformScale<2, 0, 1>,
-                     AffineQuantizedOpInterface,
-                     AffineOpCoefficient<index, 1>,
-                     TFL_SparseOp] # additional_traits> {
+class TFL_ConvOp<string mnemonic, string opSummary, int index> :
+    TFL_Op<mnemonic, [NoSideEffect, AccumulatorUniformScale<2, 0, 1>,
+    AffineQuantizedOpInterface, AffineOpCoefficient<index, 1>, TFL_SparseOp]> {
   let summary = opSummary # " operator";
 
   let description = [{
@@ -867,8 +863,7 @@ def TFL_ExternalConstOp : Op<TFL_Dialect, "external_const", [NoSideEffect]> {
   let results = (outs AnyTensor:$output);
 }
 
-def TFL_Conv2DOp : TFL_ConvOp<"conv_2d", "Convolution", 0,
-      [DeclareOpInterfaceMethods<InferTypeOpInterface>]> {
+def TFL_Conv2DOp : TFL_ConvOp<"conv_2d", "Convolution", 0> {
   let hasCanonicalizer = 1;
 
   let extraClassDeclaration = [{
@@ -879,9 +874,6 @@ def TFL_Conv2DOp : TFL_ConvOp<"conv_2d", "Convolution", 0,
     std::vector<int> GetSparseOperands() { return {1}; }
     std::vector<std::vector<int>> GetFloatBlockSize() { return {}; }
     std::vector<std::vector<int>> GetQuantizedBlockSize() { return {}; }
-
-    // Returns whether the return types are compatible.
-    static bool isCompatibleReturnTypes(ArrayRef<Type> l, ArrayRef<Type> r);
   }];
 }
 
@@ -3959,7 +3951,9 @@ def TFL_UnidirectionalSequenceLSTMOp :
            TFL_OperandHasRank<15, 1>,          // output_gate_bias
            TFL_OperandIsNoneOrHasRank<16, 2>,  // projection_weights
            TFL_OperandIsNoneOrHasRank<17, 1>,  // projection_bias
-           TFL_StatefulOp]> {
+           TFL_StatefulOp,
+           DeclareOpInterfaceMethods<InferTypeOpInterface>
+          ]> {
   let summary = "Unidirectional sequence lstm operator";
 
   let description = [{
@@ -4043,6 +4037,9 @@ def TFL_UnidirectionalSequenceLSTMOp :
   let extraClassDeclaration = [{
     // StatefulOpInterface:
     std::vector<int> GetStatefulOperands() { return {18, 19}; }
+
+    // Compatiable return types check
+    static bool isCompatibleReturnTypes(ArrayRef<Type> l, ArrayRef<Type> r);
   }];
 }
 
